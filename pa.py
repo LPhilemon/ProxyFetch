@@ -19,8 +19,10 @@ app = Flask(__name__)
 #     return"<p><a href="">PA</a></p>"
 
 DEFAULTS = {'publication': 'bbc',
-            'city': 'Kampala,UG'}
-
+            'city': 'Kampala,UG',
+'currency_from':'GBP',
+'currency_to':'USD'}
+CURRENCY_URL ="https://openexchangerates.org//api/latest.json?app_id='2612e27a53c54359aa3c8d6b8939a32d'"
 
 @app.route("/")
 # @app.route("/<publication>")
@@ -36,9 +38,20 @@ def home():
     city = request.args.get('city')
     if not city:
         city = DEFAULTS['city']
-        weather = get_weather(city)
+    weather = get_weather(city)
+    # get customized currency based on user input or default
+    currency_from = request.args.get("currency_from")
+    if not currency_from:
+        currency_from = DEFAULTS['currency_from']
+    currency_to = request.args.get("currency_to")
+    if not currency_to:
+        currency_to = DEFAULTS['currency_to']
+    rate, currencies = get_rate(currency_from, currency_to)
     return render_template("home.html", articles=articles,
-                       weather=weather)
+    weather=weather,
+    currency_from=currency_from, currency_to=currency_to,
+    rate=rate,
+    currencies=sorted(currencies))
 
 
 def get_ph_ar_news(query):
@@ -64,11 +77,19 @@ def get_weather(query):
         weather = {"description":
                    parsed["weather"][0]["description"],
                    "temperature": parsed["main"]["temp"],
-                   "city": parsed["name"]
+                   "city": parsed["name"],
+                   'country': parsed['sys']['country']
                    }
 
     return weather
 
+def get_rate(frm, to):
+    all_currency = urllib.request.urlopen(CURRENCY_URL).read()
+    
+    parsed = json.loads(all_currency).get('rates')
+    frm_rate = parsed.get(frm.upper())
+    to_rate = parsed.get(to.upper())
+    return (to_rate / frm_rate, parsed.keys())
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
