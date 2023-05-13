@@ -16,10 +16,10 @@ app = Flask(__name__)
 #     return"<p><a href="">PA</a></p>"
 
 
-@app.route("/")
+@app.route("/", ['GET', 'POST'])
 @app.route("/<publication>")
 def get_ph_ar_news():
-    query = request.args.get("publication")
+    query = request.form.get("publication")
 
     if not query or query.lower() not in RSS_FEEDS:
         publication = "bbc"
